@@ -9,12 +9,12 @@
 <body>
 <input type="text" id="search_input" onkeyup="searchBook()" placeholder="Search for a title..." title="Type in a title">
 {% for book in books %}
-<form id="myForm" action="http://localhost:5000/to_csv" method="post">
+<form id="myForm" action="{{ url_for('upload_file', book_title=book[1]) }}" method="post">
 <div class="my_div">
-    <button name="book_id" value="{{ books.index(book) }}" class="list-group-item list-group-item-action">{{ book[1] }}</button>
+    <button name="book_index" value="{{ books.index(book) }}" class="list-group-item list-group-item-action">{{ book[1] }}</button>
 </div>
+     </form>
 {% endfor %}
- </form>
     <script src="/static/search-bar.js"></script>
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>

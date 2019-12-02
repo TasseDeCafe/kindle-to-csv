@@ -39,12 +39,12 @@ def main(cursor):
             writer.writerow(line)
 
 
-def create_csv(cursor, application, book_index):
+def create_csv(cursor, application, book_index, book_title):
     my_books = get_list_books(cursor)
     selected_book_id = my_books[book_index][0]
 
     # Write the words and sentences in a CSV file.
-    with open(os.path.join(application.instance_path, 'csv_files', f'words_and_sentences_{book_index}.csv'), "w") as words_and_sentences:
+    with open(os.path.join(application.instance_path, 'csv_files', f'vocab_{book_title}.csv'), "w") as words_and_sentences:
         writer = csv.writer(words_and_sentences)
         for line in get_all_words_specific_book(cursor, selected_book_id):
             writer.writerow(line)

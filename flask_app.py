@@ -14,7 +14,7 @@ app.debug = True
 app.config.update(
     SECRET_KEY='CHANGEME',
 
-    # remove database after X seconds
+    # remove user database after X seconds
     DATABASE_PERSISTENCE=20,
 
     # Flask-Dropzone config:
@@ -100,19 +100,16 @@ def send_database_file():
     return redirect(url_for('book_list'))
 
 
-# idea: redirect to /to_csv_<filename> and open the CSV directly
-
-
-
-@app.route('/to_csv', methods=['GET', 'POST'])
-def upload_file():
+@app.route('/<book_title>', methods=['GET', 'POST'])
+def upload_file(book_title):
     if request.method == 'POST':
-        user_book_index = int(request.form['book_id'])
+        user_book_index = int(request.form['book_index'])
+        user_book_title = book_title
         try:
             connection = sqlite3.connect(os.path.join(app.instance_path, 'htmlfi', f"{request.cookies['id']}.db"))
             c = connection.cursor()
-            create_csv(c, app, user_book_index)
-            file_path = os.path.join(app.instance_path, 'csv_files', f'words_and_sentences_{user_book_index}.csv')
+            create_csv(c, app, user_book_index, user_book_title)
+            file_path = os.path.join(app.instance_path, 'csv_files', f'vocab_{user_book_title}.csv')
             file_handle = open(file_path, 'r')
         except (KeyError, sqlite3.OperationalError):
             # remove 0 byte file if user clicks on a button after the db has been removed
@@ -133,13 +130,12 @@ def upload_file():
             return response
 
         to_return = send_file(
-            os.path.join(app.instance_path, 'csv_files', f'words_and_sentences_{user_book_index}.csv'),
+            os.path.join(app.instance_path, 'csv_files', f'vocab_{user_book_title}.csv'),
             mimetype='text/csv',
             conditional=False)
-        to_return.headers["Content-Disposition"] = f"attachment; filename='words_and_sentences_{user_book_index}.csv"
-        # to_return.headers["Access-Control-Expose-Headers"] = 'x-filename'
+        # uncomment this line to open the file as an attachment
+        # to_return.headers["Content-Disposition"] = f"attachment; filename='words_and_sentences_{user_book_index}.csv"
         return to_return
-    # return send_file(filename_or_fp=os.path.join(app.instance_path, 'csv_files', 'words_and_sentences.csv'))
 
 
 if __name__ == '__main__':
