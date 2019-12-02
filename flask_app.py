@@ -4,11 +4,9 @@ from flask_debugtoolbar import DebugToolbarExtension
 from werkzeug.utils import secure_filename
 import sqlite3
 from db_to_csv import *
-from flask_dropzone import Dropzone, _Dropzone
+from flask_dropzone import Dropzone
 import uuid
 import time
-import datetime
-import sys
 import threading
 
 app = Flask(__name__, template_folder='templates')
@@ -34,8 +32,8 @@ app.config.update(
 # create folder where files are uploaded
 os.makedirs(os.path.join(app.instance_path, 'htmlfi'), exist_ok=True)
 
-# used for debugging
-toolbar = DebugToolbarExtension(app)
+# # used for debugging
+# toolbar = DebugToolbarExtension(app)
 
 # create a dropzone
 dropzone = Dropzone(app)
@@ -61,8 +59,10 @@ class TimeSet(set):
 def timeout_set_remove(my_set, item, timeout):
     time.sleep(timeout)
     try:
+        file_handle = open(item, 'r')
         os.remove(str(item))
         my_set.remove(item)
+        file_handle.close()
     except FileNotFoundError as error:
         app.logger.error("Error removing database.", error)
 
@@ -76,10 +76,17 @@ def drop_file():
 
 @app.route('/book_list', methods=["GET", "POST"])
 def book_list():
-    connection = sqlite3.connect(os.path.join(app.instance_path, 'htmlfi', f"{request.cookies['id']}.db"))
-    c = connection.cursor()
-    books = get_list_books(c)
-    return render_template('book_list.html', books=books)
+    try:
+        connection = sqlite3.connect(os.path.join(app.instance_path, 'htmlfi', f"{request.cookies['id']}.db"))
+        c = connection.cursor()
+        books = get_list_books(c)
+        return render_template('book_list.html', books=books)
+    except sqlite3.OperationalError:
+        resp = redirect(url_for('drop_file'))
+        # remove the cookie by changing its max_age to zero
+        resp.set_cookie("id", "null", max_age=0)
+        flash('Your session has expired. Please reupload your database.')
+        return resp
 
 
 @app.route("/sendfile", methods=["GET", "POST"])
@@ -96,6 +103,7 @@ def send_database_file():
 # idea: redirect to /to_csv_<filename> and open the CSV directly
 
 
+
 @app.route('/to_csv', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
@@ -107,6 +115,8 @@ def upload_file():
             file_path = os.path.join(app.instance_path, 'csv_files', f'words_and_sentences_{user_book_index}.csv')
             file_handle = open(file_path, 'r')
         except (KeyError, sqlite3.OperationalError):
+            # remove 0 byte file if user clicks on a button after the db has been removed
+            os.remove(os.path.join(app.instance_path, 'htmlfi', f"{request.cookies['id']}.db"))
             resp = redirect(url_for('drop_file'))
             # remove the cookie by changing its max_age to zero
             resp.set_cookie("id", "null", max_age=0)
