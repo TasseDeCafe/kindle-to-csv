@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, send_file, url_for, redirect, after_this_request, make_response, \
-    flash, Markup
+    flash, Markup, send_from_directory
 from flask_debugtoolbar import DebugToolbarExtension
 from werkzeug.utils import secure_filename
 import sqlite3
@@ -10,12 +10,11 @@ import time
 import threading
 
 app = Flask(__name__, template_folder='templates')
-app.debug = True
 app.config.update(
     SECRET_KEY='CHANGEME',
 
     # remove user database after X seconds
-    DATABASE_PERSISTENCE=20,
+    DATABASE_PERSISTENCE=666,
 
     # Flask-Dropzone config:
     DROPZONE_ALLOWED_FILE_CUSTOM=True,
@@ -23,10 +22,10 @@ app.config.update(
     DROPZONE_MAX_FILE_SIZE=50,
     DROPZONE_MAX_FILES=1,
     DROPZONE_REDIRECT_VIEW='book_list',
-    DROPZONE_DEFAULT_MESSAGE='Drop your Kindle database here or click to upload.',
+    DROPZONE_DEFAULT_MESSAGE='Drop your Kindle database here or click to upload.'
 
     # debugger config
-    DEBUG_TB_INTERCEPT_REDIRECTS=False
+    # DEBUG_TB_INTERCEPT_REDIRECTS=False
 )
 
 # create folder where files are uploaded
@@ -94,9 +93,7 @@ def send_database_file():
     f = request.files['file']
     f.save(os.path.join(app.instance_path, 'htmlfi', secure_filename(f"{request.cookies['id']}.db")))
     my_set = TimeSet()
-    my_set.add(os.path.join(app.instance_path, 'htmlfi', f"{request.cookies['id']}.db"),
-               app.config['DATABASE_PERSISTENCE'])
-
+    my_set.add(os.path.join(app.instance_path, 'htmlfi', f"{request.cookies['id']}.db"), app.config['DATABASE_PERSISTENCE'])
     return redirect(url_for('book_list'))
 
 
@@ -136,6 +133,12 @@ def upload_file(book_title):
         # uncomment this line to open the file as an attachment
         # to_return.headers["Content-Disposition"] = f"attachment; filename='words_and_sentences_{user_book_index}.csv"
         return to_return
+
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 
 if __name__ == '__main__':
